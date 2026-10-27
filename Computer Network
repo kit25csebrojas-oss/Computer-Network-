@@ -1,0 +1,456 @@
+import java.util.*;
+
+public class NetworkConnectivityAnalyzer {
+
+    // Edge class
+    static class Edge {
+        int destination;
+        int weight;
+
+        Edge(int destination, int weight) {
+            this.destination = destination;
+            this.weight = weight;
+        }
+    }
+
+    // Graph class
+    static class Graph {
+        int vertices;
+        ArrayList<ArrayList<Edge>> adjacencyList;
+
+        Graph(int vertices) {
+            this.vertices = vertices;
+            adjacencyList = new ArrayList<>();
+
+            for (int i = 0; i < vertices; i++) {
+                adjacencyList.add(new ArrayList<>());
+            }
+        }
+
+        // Add an undirected edge
+        void addEdge(int source, int destination, int weight) {
+            adjacencyList.get(source).add(new Edge(destination, weight));
+            adjacencyList.get(destination).add(new Edge(source, weight));
+        }
+
+        // Display graph
+        void displayGraph() {
+            System.out.println("\n========== NETWORK GRAPH ==========");
+
+            for (int i = 0; i < vertices; i++) {
+                System.out.print("Device " + i + " -> ");
+
+                for (Edge edge : adjacencyList.get(i)) {
+                    System.out.print(
+                            "Device " + edge.destination +
+                            "(Cost: " + edge.weight + ")  "
+                    );
+                }
+
+                System.out.println();
+            }
+        }
+
+        // BFS Algorithm
+        void BFS(int start) {
+
+            boolean[] visited = new boolean[vertices];
+            Queue<Integer> queue = new LinkedList<>();
+
+            visited[start] = true;
+            queue.add(start);
+
+            System.out.print("\nBFS Traversal: ");
+
+            while (!queue.isEmpty()) {
+
+                int current = queue.poll();
+
+                System.out.print(current + " ");
+
+                for (Edge edge : adjacencyList.get(current)) {
+
+                    if (!visited[edge.destination]) {
+                        visited[edge.destination] = true;
+                        queue.add(edge.destination);
+                    }
+                }
+            }
+
+            System.out.println();
+        }
+
+        // DFS Algorithm
+        void DFS(int start) {
+
+            boolean[] visited = new boolean[vertices];
+
+            System.out.print("\nDFS Traversal: ");
+
+            DFSUtil(start, visited);
+
+            System.out.println();
+        }
+
+        void DFSUtil(int current, boolean[] visited) {
+
+            visited[current] = true;
+
+            System.out.print(current + " ");
+
+            for (Edge edge : adjacencyList.get(current)) {
+
+                if (!visited[edge.destination]) {
+                    DFSUtil(edge.destination, visited);
+                }
+            }
+        }
+
+        // Dijkstra's Algorithm
+        void dijkstra(int source, int destination) {
+
+            int[] distance = new int[vertices];
+            int[] parent = new int[vertices];
+
+            Arrays.fill(distance, Integer.MAX_VALUE);
+            Arrays.fill(parent, -1);
+
+            distance[source] = 0;
+
+            PriorityQueue<int[]> pq =
+                    new PriorityQueue<>(Comparator.comparingInt(a -> a[1]));
+
+            pq.add(new int[]{source, 0});
+
+            while (!pq.isEmpty()) {
+
+                int[] current = pq.poll();
+
+                int node = current[0];
+                int currentDistance = current[1];
+
+                if (currentDistance > distance[node]) {
+                    continue;
+                }
+
+                for (Edge edge : adjacencyList.get(node)) {
+
+                    int newDistance =
+                            currentDistance + edge.weight;
+
+                    if (newDistance < distance[edge.destination]) {
+
+                        distance[edge.destination] = newDistance;
+                        parent[edge.destination] = node;
+
+                        pq.add(new int[]{
+                                edge.destination,
+                                newDistance
+                        });
+                    }
+                }
+            }
+
+            System.out.println("\n========== SHORTEST PATH ==========");
+
+            if (distance[destination] == Integer.MAX_VALUE) {
+
+                System.out.println(
+                        "No path exists between Device " +
+                        source + " and Device " +
+                        destination
+                );
+
+                return;
+            }
+
+            // Construct path
+            ArrayList<Integer> path = new ArrayList<>();
+
+            int current = destination;
+
+            while (current != -1) {
+
+                path.add(current);
+                current = parent[current];
+            }
+
+            Collections.reverse(path);
+
+            System.out.print("Shortest Path: ");
+
+            for (int i = 0; i < path.size(); i++) {
+
+                System.out.print(path.get(i));
+
+                if (i < path.size() - 1) {
+                    System.out.print(" -> ");
+                }
+            }
+
+            System.out.println();
+
+            System.out.println(
+                    "Minimum Cost: " + distance[destination]
+            );
+        }
+
+        // Find connected components
+        void connectedComponents() {
+
+            boolean[] visited = new boolean[vertices];
+
+            int components = 0;
+
+            System.out.println("\n====== CONNECTED COMPONENTS ======");
+
+            for (int i = 0; i < vertices; i++) {
+
+                if (!visited[i]) {
+
+                    components++;
+
+                    System.out.print(
+                            "Component " + components + ": "
+                    );
+
+                    DFSComponent(i, visited);
+
+                    System.out.println();
+                }
+            }
+
+            System.out.println(
+                    "\nTotal Connected Components: " +
+                    components
+            );
+
+            if (components == 1) {
+                System.out.println(
+                        "Network Status: CONNECTED"
+                );
+            } else {
+                System.out.println(
+                        "Network Status: DISCONNECTED"
+                );
+            }
+        }
+
+        void DFSComponent(int current, boolean[] visited) {
+
+            visited[current] = true;
+
+            System.out.print(current + " ");
+
+            for (Edge edge : adjacencyList.get(current)) {
+
+                if (!visited[edge.destination]) {
+
+                    DFSComponent(
+                            edge.destination,
+                            visited
+                    );
+                }
+            }
+        }
+    }
+
+    // Main method
+    public static void main(String[] args) {
+
+        Scanner scanner = new Scanner(System.in);
+
+        /*
+         * Network:
+         *
+         *       1
+         *      / \
+         *     0   3
+         *      \ / \
+         *       2   4
+         *            \
+         *             5
+         *
+         */
+
+        Graph graph = new Graph(6);
+
+        // Add network connections
+        graph.addEdge(0, 1, 4);
+        graph.addEdge(0, 2, 2);
+        graph.addEdge(1, 3, 5);
+        graph.addEdge(2, 3, 1);
+        graph.addEdge(3, 4, 3);
+        graph.addEdge(1, 5, 2);
+
+        int choice;
+
+        do {
+
+            System.out.println("\n");
+            System.out.println("======================================");
+            System.out.println("     NETWORK CONNECTIVITY ANALYZER");
+            System.out.println("======================================");
+
+            System.out.println("1. Display Network");
+            System.out.println("2. BFS Traversal");
+            System.out.println("3. DFS Traversal");
+            System.out.println("4. Find Shortest Path");
+            System.out.println("5. Check Network Connectivity");
+            System.out.println("6. Algorithm Complexity");
+            System.out.println("7. Exit");
+
+            System.out.print("\nEnter your choice: ");
+
+            choice = scanner.nextInt();
+
+            switch (choice) {
+
+                case 1:
+
+                    graph.displayGraph();
+
+                    break;
+
+                case 2:
+
+                    System.out.print(
+                            "Enter starting device (0-5): "
+                    );
+
+                    int bfsStart = scanner.nextInt();
+
+                    if (bfsStart >= 0 && bfsStart < 6) {
+                        graph.BFS(bfsStart);
+                    } else {
+                        System.out.println(
+                                "Invalid device!"
+                        );
+                    }
+
+                    break;
+
+                case 3:
+
+                    System.out.print(
+                            "Enter starting device (0-5): "
+                    );
+
+                    int dfsStart = scanner.nextInt();
+
+                    if (dfsStart >= 0 && dfsStart < 6) {
+                        graph.DFS(dfsStart);
+                    } else {
+                        System.out.println(
+                                "Invalid device!"
+                        );
+                    }
+
+                    break;
+
+                case 4:
+
+                    System.out.print(
+                            "Enter source device (0-5): "
+                    );
+
+                    int source = scanner.nextInt();
+
+                    System.out.print(
+                            "Enter destination device (0-5): "
+                    );
+
+                    int destination = scanner.nextInt();
+
+                    if (source >= 0 && source < 6 &&
+                            destination >= 0 &&
+                            destination < 6) {
+
+                        graph.dijkstra(
+                                source,
+                                destination
+                        );
+
+                    } else {
+
+                        System.out.println(
+                                "Invalid device!"
+                        );
+                    }
+
+                    break;
+
+                case 5:
+
+                    graph.connectedComponents();
+
+                    break;
+
+                case 6:
+
+                    System.out.println(
+                            "\n========== ALGORITHM COMPLEXITY =========="
+                    );
+
+                    System.out.println(
+                            "\nBFS:"
+                    );
+                    System.out.println(
+                            "Time Complexity  : O(V + E)"
+                    );
+                    System.out.println(
+                            "Space Complexity : O(V)"
+                    );
+
+                    System.out.println(
+                            "\nDFS:"
+                    );
+                    System.out.println(
+                            "Time Complexity  : O(V + E)"
+                    );
+                    System.out.println(
+                            "Space Complexity : O(V)"
+                    );
+
+                    System.out.println(
+                            "\nDijkstra:"
+                    );
+                    System.out.println(
+                            "Time Complexity  : O((V + E) log V)"
+                    );
+                    System.out.println(
+                            "Space Complexity : O(V)"
+                    );
+
+                    System.out.println(
+                            "\nConnected Components:"
+                    );
+                    System.out.println(
+                            "Time Complexity  : O(V + E)"
+                    );
+                    System.out.println(
+                            "Space Complexity : O(V)"
+                    );
+
+                    break;
+
+                case 7:
+
+                    System.out.println(
+                            "\nThank you for using Network Connectivity Analyzer!"
+                    );
+
+                    break;
+
+                default:
+
+                    System.out.println(
+                            "Invalid choice!"
+                    );
+            }
+
+        } while (choice != 7);
+
+        scanner.close();
+    }
+}
